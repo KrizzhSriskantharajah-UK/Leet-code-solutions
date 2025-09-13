@@ -23,11 +23,13 @@ jobs:
 
       - name: Generate Markdown files
         run: |
+          python - <<EOF
           import os, json
+      
           BASE_DIR = "."
           with open("solved_problems.json") as f:
               problems = json.load(f)
-
+      
           for problem in problems:
               difficulty = problem["difficulty"]
               os.makedirs(os.path.join(BASE_DIR, difficulty), exist_ok=True)
@@ -40,6 +42,7 @@ jobs:
                   f_md.write(problem.get("solutionCode",""))
                   f_md.write("\n```\n")
                   f_md.write(f"## Stats\n- Runtime: {problem.get('runtime','N/A')}\n- Memory: {problem.get('memory','N/A')}\n")
+          EOF
 
       - name: Commit & Push Changes
         run: |
