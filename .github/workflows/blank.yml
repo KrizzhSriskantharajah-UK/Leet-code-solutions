@@ -28,30 +28,8 @@ jobs:
       - name: Fetch solved problems and generate MD
         run: |
           mkdir -p Easy Medium Hard
-          # Fetch recent AC problems
-          leetcode list -s ac -x --json > solved.json
-          python - <<EOF
-          import json, os, subprocess
+          python generate_md.py
 
-          BASE_DIR = "."
-          with open("solved.json") as f:
-              problems = json.load(f)
-
-          for problem in problems:
-              title_slug = problem['titleSlug']
-              difficulty = problem['difficulty'].capitalize()
-              os.makedirs(os.path.join(BASE_DIR, difficulty), exist_ok=True)
-              # Fetch solution code for Python
-              result = subprocess.run(["leetcode", "show", title_slug, "-l", "python3"], capture_output=True, text=True)
-              code = result.stdout
-              md_path = os.path.join(BASE_DIR, difficulty, f"{title_slug}.md")
-              with open(md_path, "w", encoding="utf-8") as f_md:
-                  f_md.write(f"# {problem['title']}\n\n")
-                  f_md.write(f"**Difficulty:** {difficulty}\n")
-                  f_md.write(f"**Link:** [LeetCode](https://leetcode.com/problems/{title_slug}/)\n\n")
-                  f_md.write("## Solution (Python)\n```python\n")
-                  f_md.write(code)
-                  f_md.write("\n```\n")
           EOF
 
       - name: Commit & Push Changes
