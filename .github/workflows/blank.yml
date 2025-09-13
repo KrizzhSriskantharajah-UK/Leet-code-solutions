@@ -1,16 +1,16 @@
 name: Update LeetCode Solutions
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:       # Manual trigger
   schedule:
-    - cron: '0 0 * * *'
+    - cron: '0 0 * * *'   # Runs daily at midnight UTC
 
 jobs:
-  generate-markdown:
+  fetch-and-generate:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -18,8 +18,58 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Generate Markdown files
-        run: python generate_md.py
+      - name: Install requests
+        run: pip install requests
+
+      - name: Fetch LeetCode solved problems and generate MD
+        run: |
+          python - <<EOF
+          import os, requests
+
+          BASE_DIR = "."
+          username = "KrizzhSriskantharajah"
+
+          query = """
+          query getUserProblems($username: String!) {
+            matchedUser(username: $username) {
+              submitStats {
+                acSubmissionNum {
+                  difficulty
+                  count
+                  submissions
+                }
+              }
+            }
+            recentAcSubmissionList(username: $username, limit: 50) {
+              title
+              titleSlug
+              difficulty
+              lang
+              timestamp
+              statusDisplay
+              runtime
+              memory
+            }
+          }
+          """
+
+          url = "https://leetcode.com/graphql"
+          response = requests.post(url, json={"query": query, "variables": {"username": username}})
+          data = response.json()
+          problems = data.get("data", {}).get("recentAcSubmissionList", [])
+
+          for problem in problems:
+              difficulty = problem["difficulty"].capitalize()
+              os.makedirs(os.path.join(BASE_DIR, difficulty), exist_ok=True)
+              md_path = os.path.join(BASE_DIR, difficulty, f"{problem['titleSlug']}.md")
+              with open(md_path, "w", encoding="utf-8") as f_md:
+                  f_md.write(f"# {problem['title']}\n\n")
+                  f_md.write(f"**Difficulty:** {difficulty}\n")
+                  f_md.write(f"**Link:** [LeetCode](https://leetcode.com/problems/{problem['titleSlug']}/)\n\n")
+                  f_md.write("## Stats\n")
+                  f_md.write(f"- Runtime: {problem.get('runtime','N/A')}\n")
+                  f_md.write(f"- Memory: {problem.get('memory','N/A')}\n")
+          EOF
 
       - name: Commit & Push Changes
         run: |
