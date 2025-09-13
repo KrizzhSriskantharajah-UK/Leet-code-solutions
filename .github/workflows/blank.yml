@@ -13,62 +13,45 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          python-version: "3.x"
+          node-version: "20"
 
-      - name: Install requests
-        run: pip install requests
+      - name: Install leetcode-cli
+        run: npm install -g leetcode-cli
 
-      - name: Fetch LeetCode solved problems and generate MD
+      - name: Authenticate (optional)
+        # Only needed if you want to access private submissions
+        run: leetcode user -l "KrizzhSriskantharajah"
+
+      - name: Fetch solved problems and generate MD
         run: |
+          mkdir -p Easy Medium Hard
+          # Fetch recent AC problems
+          leetcode list -s ac -x --json > solved.json
           python - <<EOF
-          import os, requests
+          import json, os, subprocess
 
           BASE_DIR = "."
-          username = "KrizzhSriskantharajah"
-
-          query = """
-          query getUserProblems($username: String!) {
-            matchedUser(username: $username) {
-              submitStats {
-                acSubmissionNum {
-                  difficulty
-                  count
-                  submissions
-                }
-              }
-            }
-            recentAcSubmissionList(username: $username, limit: 50) {
-              title
-              titleSlug
-              difficulty
-              lang
-              timestamp
-              statusDisplay
-              runtime
-              memory
-            }
-          }
-          """
-
-          url = "https://leetcode.com/graphql"
-          response = requests.post(url, json={"query": query, "variables": {"username": username}})
-          data = response.json()
-          problems = data.get("data", {}).get("recentAcSubmissionList", [])
+          with open("solved.json") as f:
+              problems = json.load(f)
 
           for problem in problems:
-              difficulty = problem["difficulty"].capitalize()
+              title_slug = problem['titleSlug']
+              difficulty = problem['difficulty'].capitalize()
               os.makedirs(os.path.join(BASE_DIR, difficulty), exist_ok=True)
-              md_path = os.path.join(BASE_DIR, difficulty, f"{problem['titleSlug']}.md")
+              # Fetch solution code for Python
+              result = subprocess.run(["leetcode", "show", title_slug, "-l", "python3"], capture_output=True, text=True)
+              code = result.stdout
+              md_path = os.path.join(BASE_DIR, difficulty, f"{title_slug}.md")
               with open(md_path, "w", encoding="utf-8") as f_md:
                   f_md.write(f"# {problem['title']}\n\n")
                   f_md.write(f"**Difficulty:** {difficulty}\n")
-                  f_md.write(f"**Link:** [LeetCode](https://leetcode.com/problems/{problem['titleSlug']}/)\n\n")
-                  f_md.write("## Stats\n")
-                  f_md.write(f"- Runtime: {problem.get('runtime','N/A')}\n")
-                  f_md.write(f"- Memory: {problem.get('memory','N/A')}\n")
+                  f_md.write(f"**Link:** [LeetCode](https://leetcode.com/problems/{title_slug}/)\n\n")
+                  f_md.write("## Solution (Python)\n```python\n")
+                  f_md.write(code)
+                  f_md.write("\n```\n")
           EOF
 
       - name: Commit & Push Changes
