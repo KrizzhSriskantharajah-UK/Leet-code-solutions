@@ -3,8 +3,14 @@ import subprocess
 import json
 
 BASE_DIR = "."
-# Fetch solved problems using leetcode-cli
-result = subprocess.run(["leetcode", "list", "-s", "ac", "-x", "--json"], capture_output=True, text=True)
+
+# Fetch solved problems
+result = subprocess.run(
+    ["leetcode", "list", "-s", "ac", "-x", "--json"],
+    capture_output=True,
+    text=True,
+    env={**os.environ, "LC_SESSION": os.environ["LC_SESSION"]}
+)
 problems_json = result.stdout
 
 try:
@@ -19,8 +25,13 @@ for problem in problems:
     difficulty = problem['difficulty'].capitalize()
     os.makedirs(os.path.join(BASE_DIR, difficulty), exist_ok=True)
     
-    # Fetch solution code (Python)
-    code_result = subprocess.run(["leetcode", "show", title_slug, "-l", "python3"], capture_output=True, text=True)
+    # Fetch Python solution code
+    code_result = subprocess.run(
+        ["leetcode", "show", title_slug, "-l", "python3"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "LC_SESSION": os.environ["LC_SESSION"]}
+    )
     code = code_result.stdout
     
     md_path = os.path.join(BASE_DIR, difficulty, f"{title_slug}.md")
