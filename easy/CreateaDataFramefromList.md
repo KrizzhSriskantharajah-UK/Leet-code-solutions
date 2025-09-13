@@ -9,7 +9,8 @@ def createDataframe(student_data: List[List[int]]) -> pd.DataFrame:
 
 ```
 
-[submission details](https://leetcode.com/submissions/detail/1768943186/)
+<img width="1204" height="1198" alt="image" src="https://github.com/user-attachments/assets/1c961cb7-e363-4d6f-a16a-28dde1b8bf03" />
+
 
 
 
